@@ -1,15 +1,78 @@
 from pymouse import PyMouse
 import time
-m = PyMouse()
+
+    
+import select, socket
 
 
-def main():
-	for counter in range(500):
-		m.move(counter,counter)
-		time.sleep(1/5)
-	print m.screen_size()[0]
-def fracToPx(screenFrac):
-	m.screen_size()
+
+def msgDecrypt(msgString):
+	#Uses locations of msgString segmentations to breakup into useable data
+	m1Loc = [0,1]
+	m2Loc = [1,2]
+	xLoc = [2,6]
+	yLoc = [6,10]
+	data = [msgString[m1Loc[0],m1Loc[1]],msgString[m2Loc[0],m2Loc[1]],msgString[xLoc[0],xLoc[1]]]
+	return data
+	
+def ClickHandeler(data,click):
+	#This is an ugly function.
+	hold = 0
+	if(data[0] == 0 and click == 1):
+		#If left button has been released
+		if(click[4] == 0):
+			#If left button was not being held
+			m.click(data[2],data[3], 1)
+			m.move(data[2],data[3])
+	 	if(click[4] == 1):
+			#If left button was being held
+			m.move(data[2],data[3])
+			m.release(data[2],data[3], 1)
+	if(data[0] == 1 and click == 1):
+		#If left button is being held
+		m.press(data[2],data[3], 1)
+		m.move(data[2],data[3])
+		hold = 1
+	if(data[1] == 1):
+		#right button pressed
+		m.press(data[2],data[3], 2)
+		m.move(data[2],data[3])
+	else:
+		#no buttions pressed move the mouse
+		m.move(data[2],data[3])
+
+	
+	click2 = data + [ hold ]
+	return click2
+
+def Main():
+	m = PyMouse() #Instantiate a mouse object
+	
+	port = 53005  #Where do you expect to get a msg?
+	
+	bufferSize = 1024 #Whatever you need
+
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.bind(('<broadcast>', port))
+	s.setblocking(0)
+	click = [0,0,0,0]
+	while True:
+    	result = select.select([s],[],[])
+    	msg = result[0][0].recv(bufferSize)
+		data = msgDecrypt(msg)
+		
+		click = ClickHandeler(data,click)
+		
+		if data[0] != 0 or data[1] != 0:
+			#If click detected then Click at location
+			if data[0] != 0:
+				
+			m.click(data[2],data[3])
+			m.move(data[2],data[3])
+		else:
+			#Else moves the currsor
+			m.move(data[2],data[3])
+
 	
 if __name__ == "__main__":
-    main()
+    Main()
