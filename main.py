@@ -1,6 +1,7 @@
 from pymouse import PyMouse
 import time
 
+
     
 import select, socket
 
@@ -53,25 +54,17 @@ def Main():
 	bufferSize = 1024 #Whatever you need
 
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	s.bind(('<broadcast>', port))
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+	s.sendto('1234', ('<broadcast>', port))
 	s.setblocking(0)
-	click = [0,0,0,0]
+	click = [0,0,0,0,0]
+	print "Running"
 	while True:
-    	result = select.select([s],[],[])
-    	msg = result[0][0].recv(bufferSize)
+		result = select.select([s],[],[])
+		msg = result[0][0].recv(bufferSize)
 		data = msgDecrypt(msg)
 		
 		click = ClickHandeler(data,click)
-		
-		if data[0] != 0 or data[1] != 0:
-			#If click detected then Click at location
-			if data[0] != 0:
-				
-			m.click(data[2],data[3])
-			m.move(data[2],data[3])
-		else:
-			#Else moves the currsor
-			m.move(data[2],data[3])
 
 	
 if __name__ == "__main__":
